@@ -10,6 +10,11 @@ readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Senior Backend Team" }]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+exclude = ["api*", "tests*", "scripts*"]
+
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-ra -q --asyncio-mode=auto"
