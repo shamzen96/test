@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: tenant_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: tenant_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tenant_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tenant_network
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tenant_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_NAME: "Dynamic Multi Tenant API"
+      APP_ENV: "production"
+      DEBUG: "false"
+      DATABASE_URL: "postgresql+asyncpg://postgres:password@db:5432/tenant_db"
+      JWT_SECRET_KEY: "production-ready-super-secret-key-minimum-32-characters"
+      JWT_ALGORITHM: "HS256"
+      JWT_ISSUER: "dynamic-tenant-api"
+      JWT_AUDIENCE: "tenant-users"
+      ADMIN_API_KEY: "admin-secret-key-change-in-production"
+      TENANT_CACHE_MAX_SIZE: 1000
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:8000"
+    ports:
+      - "8000:8000"
+    networks:
+      - tenant_network
+
+volumes:
+  postgres_data:
+
+networks:
+  tenant_network:
+    driver: bridge
+
